@@ -31,7 +31,7 @@ async def extract_block_no_image_from_pdf(coe: UploadFile = File(...)):
     coe_instance.resize_image()
 
     # Extract block number image
-    block_no_image = coe_instance.get_block_no_image()
+    block_no_image = coe_instance.extract_block_no()
 
     # Convert the image to a byte stream
     img_byte_arr = BytesIO()

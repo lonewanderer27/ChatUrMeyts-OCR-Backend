@@ -52,6 +52,10 @@ class COE:
         self.acad_year_y = 40
         self.acad_year_width = 150
         self.acad_year_height = 20
+        self.block_no_x = 275
+        self.block_no_y = 0
+        self.block_no_width = 100
+        self.block_no_height = 25
         self.bottom_image_x = 0
         self.bottom_image_y = 206
         self.cropped_width = 520
@@ -174,7 +178,7 @@ class COE:
 
         return bottom_image
 
-    def extract_semester_image(self):
+    def extract_semester(self, save_image=None):
         """
         Extract the semester image from the top image using the predefined coordinates and dimensions.
 
@@ -195,7 +199,7 @@ class COE:
         semester_image = top_image.crop((x, y, x + self.semester_width, y + self.semester_height))
 
         # Optionally, save the image if required
-        if self.save_images or self.save_image:
+        if save_image if save_image is not None else self.save_images:
             semester_image_path = os.path.join(self.save_path, "semester_image.png")
             semester_image.save(semester_image_path)
             logger.info(f"Semester image saved as {semester_image_path}.")
@@ -203,9 +207,9 @@ class COE:
         # Return the cropped semester image
         return semester_image
 
-    def get_block_no_image(self, save_image=None):
+    def extract_block_no(self, save_image=None):
         """
-        Extract and return the block number region from the bottom image.
+        Extract and return the block number region from the image using defined coordinates.
 
         Parameters:
             save_image: Boolean to override the class-level save configuration.
@@ -213,11 +217,16 @@ class COE:
         if not self.image:
             raise ValueError("No image loaded. Please load a file first.")
 
-        # First, get the bottom image
-        bottom_image = self.get_bottom_image()
+        # Define the block number crop area using the class-level coordinates
+        block_no_box = (
+            self.block_no_x,
+            self.block_no_y,
+            self.block_no_x + self.block_no_width,
+            self.block_no_y + self.block_no_height,
+        )
 
-        # Define the block number crop area
-        block_no_box = (0, 0, self.cropped_width, 30)
+        # Get the bottom image
+        bottom_image = self.get_bottom_image()
 
         # Crop the block number region
         block_no_image = bottom_image.crop(block_no_box)
@@ -230,6 +239,7 @@ class COE:
             logger.info(f"Block number image saved as {block_no_image_path}.")
 
         return block_no_image
+
 
     def extract_student_name(self):
         """
@@ -356,55 +366,3 @@ class COE:
 
         logger.info("Class extraction completed.")
         return classes_data
-
-# # Usage Example
-# try:
-#     coe = COE("your_file.pdf", save_images=True, save_path="202117150")  # Replace with the path to your file
-#     coe.load_file()
-
-#     # Resize the image to target dimensions
-#     coe.resize_image()
-
-#     # Extract and save the top image
-#     top_image = coe.get_top_image()
-#     top_image.save("top_image.png")
-#     logger.info("Top image saved as top_image.png.")
-
-#     # Extract and save the bottom image
-#     bottom_image = coe.get_bottom_image()
-#     # bottom_image.save("bottom_image.png")
-#     logger.info("Bottom image saved as bottom_image.png.")
-
-#     # Extract and save the block number image
-#     block_no_image = coe.get_block_no_image()
-#     logger.info("Block number image saved as block_no_image.png.")
-
-#     # Extract and save the semester image
-#     semester_image = coe.extract_semester_image()
-#     # semester_image.save("semester_image.png")
-#     logger.info("Semester image saved as semester_image.png.")
-
-#     # Extract and save the student name image
-#     student_name_image = coe.extract_student_name()
-#     # student_name_image.save("student_name_image.png")
-#     logger.info("Student name image saved as student_name_image.png.")
-
-#     # Extract and save the course image
-#     course_image = coe.extract_course()
-#     # course_image.save("course_image.png")
-#     logger.info("Course image saved as course_image.png.")
-
-#     # Extract and save the student number image
-#     student_no_image = coe.extract_student_no()
-#     # student_no_image.save("student_no_image.png")
-#     logger.info("Student number image saved as student_no_image.png.")
-
-#     # Extract and save the academic year image
-#     acad_year_image = coe.extract_acad_year()
-#     # acad_year_image.save("acad_year_image.png")
-#     logger.info("Academic year image saved as acad_year_image.png.")
-
-#     # Extract and save each class image
-#     coe.extract_classes()
-# except Exception as e:
-#     logger.error(f"Error: {e}")

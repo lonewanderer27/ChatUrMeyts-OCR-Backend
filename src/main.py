@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.routers.image import router as img_router
+from src.routers.extract import extract_router
 import logging
 import os
 import uvicorn
@@ -24,6 +25,7 @@ chaturmeytsocr.add_middleware(
 )
 
 chaturmeytsocr.include_router(img_router)
+chaturmeytsocr.include_router(extract_router)
 
 @chaturmeytsocr.get("/")
 async def root():
