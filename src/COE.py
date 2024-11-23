@@ -33,8 +33,8 @@ class COE:
         self.top_image_y = 112
         self.top_image_width = None  # Set dynamically after loading image
         self.top_image_height = 60
-        self.semester_x = 250
-        self.semester_width = 360  # 610 - 250 = 360
+        self.semester_x = 300
+        self.semester_width = 250
         self.semester_height = 20
         self.student_name_x = 105
         self.student_name_y = 20
@@ -326,7 +326,7 @@ class COE:
                 logger.info(f"Class {class_index} class code saved as {class_code_image_path}.")
 
             # Crop unit count (right part, 50px wide)
-            unit_count_image = class_image.crop((490, 0, 520, 45))
+            unit_count_image = class_image.crop((490, 5, 520, 40))
             unit_count_image_data = unit_count_image  # Store the image data here
             if save_image if save_image is not None else self.save_images:
                 unit_count_image_path = os.path.join(self.save_path, f"unit_count_{class_index}.png")
