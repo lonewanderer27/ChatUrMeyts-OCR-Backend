@@ -326,7 +326,7 @@ class COE:
                 logger.info(f"Class {class_index} class code saved as {class_code_image_path}.")
 
             # Crop unit count (right part, 50px wide)
-            unit_count_image = class_image.crop((470, 0, 520, 45))
+            unit_count_image = class_image.crop((490, 0, 520, 45))
             unit_count_image_data = unit_count_image  # Store the image data here
             if save_image if save_image is not None else self.save_images:
                 unit_count_image_path = os.path.join(self.save_path, f"unit_count_{class_index}.png")
