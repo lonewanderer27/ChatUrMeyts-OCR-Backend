@@ -84,6 +84,11 @@ def process_class(class_images, cleaner):
         )
     )
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
 @extract_router.post("/all", description="Extract all the information from the COE PDF", response_model=Student)
 async def extract_all_info_from_pdf(coe_file: UploadFile = File(...)):
     logger.info("Extracting all information from COE PDF")
@@ -137,15 +142,18 @@ async def extract_all_info_from_pdf(coe_file: UploadFile = File(...)):
 
         # Process classes in parallel
         classes_image = coe.extract_classes()
-        with ThreadPoolExecutor() as executor:
-            class_futures = list(executor.map(
-                partial(process_class, cleaner=cleaner),
-                classes_image
-            ))
-        
-        # Filter out None values and create final classes list
-        classes = [c for c in class_futures if c is not None]
+        classes = []
 
+        for batch in chunks(classes_image, 4):
+            with ThreadPoolExecutor() as executor:
+                batch_results = list(executor.map(
+                    partial(process_class, cleaner=cleaner),
+                    batch
+                ))
+                # Filter out None values and extend the classes list
+                classes.extend([c for c in batch_results if c is not None])
+
+        # Build the Student object with the processed classes
         return Student(
             student_name=results['student_name'],
             student_no=results['student_no'],
@@ -188,14 +196,17 @@ async def extract_classes_from_pdf(coe: UploadFile = File(...)):
         classes_image = coe.extract_classes()
 
         # Process classes in parallel
-        with ThreadPoolExecutor() as executor:
-            class_futures = list(executor.map(
-                partial(process_class, cleaner=cleaner),
-                classes_image
-            ))
-        
-        # Filter out None values and create final classes list
-        classes = [c for c in class_futures if c is not None]
+        classes_image = coe.extract_classes()
+        classes = []
+
+        for batch in chunks(classes_image, 4):
+            with ThreadPoolExecutor() as executor:
+                batch_results = list(executor.map(
+                    partial(process_class, cleaner=cleaner),
+                    batch
+                ))
+                # Filter out None values and extend the classes list
+                classes.extend([c for c in batch_results if c is not None])
 
         return classes
 
