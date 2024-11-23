@@ -138,7 +138,7 @@ async def extract_all_info_from_pdf(coe: UploadFile = File(...)):
 
     return Student(student_name=student_name, student_no=student_no, course_name=course_name, block_no=block_no, semester=semester, acad_year=acad_year, classes=classes)
 
-@extract_router.post("/semester", description="Extract the semester from the COE PDF")
+@extract_router.post("/semester", description="Extract the semester from the COE PDF", response_model=Semester)
 async def extract_semester_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting semester image from COE PDF")
 
@@ -165,7 +165,7 @@ async def extract_semester_from_pdf(coe: UploadFile = File(...)):
     # Image to string
     return {"semester": semester}
 
-@extract_router.post("/course", description="Extract the course name from the COE PDF")
+@extract_router.post("/course", description="Extract the course name from the COE PDF", response_model=Course)
 async def extract_course_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting course name image from COE PDF")
 
@@ -195,7 +195,7 @@ async def extract_course_from_pdf(coe: UploadFile = File(...)):
     # Image to string
     return Course(course_name=course_name)
 
-@extract_router.post("/block", description="Extract the block number from the COE PDF")
+@extract_router.post("/block", description="Extract the block number from the COE PDF", response_model=BlockNo)
 async def extract_block_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting block number image from COE PDF")
 
@@ -225,7 +225,7 @@ async def extract_block_from_pdf(coe: UploadFile = File(...)):
     # Image to string
     return BlockNo(block_no=block_no)
 
-@extract_router.post("/student_no", description="Extract the student number from the COE PDF")
+@extract_router.post("/student_no", description="Extract the student number from the COE PDF", response_model=StudentNo)
 async def extract_student_no_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting student number image from COE PDF")
 
@@ -252,7 +252,7 @@ async def extract_student_no_from_pdf(coe: UploadFile = File(...)):
     # Image to string
     return StudentNo(student_no=student_no)
 
-@extract_router.post("/student_name", description="Extract the student name from the COE PDF")
+@extract_router.post("/student_name", description="Extract the student name from the COE PDF", response_model=StudentName)
 async def extract_student_name_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting student name image from COE PDF")
 
@@ -279,7 +279,7 @@ async def extract_student_name_from_pdf(coe: UploadFile = File(...)):
     # Image to string
     return StudentName(student_name=student_name)
 
-@extract_router.post("/acad_year", description="Extract the academic year from the COE PDF")
+@extract_router.post("/acad_year", description="Extract the academic year from the COE PDF", response_model=AcadYear)
 async def extract_acad_year_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting academic year image from COE PDF")
 

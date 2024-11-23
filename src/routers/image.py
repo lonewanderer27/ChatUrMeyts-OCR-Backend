@@ -10,9 +10,22 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+class Responses:
+    @staticmethod
+    def png_image_response(description: str = "A PNG image file."):
+        return {
+            200: {
+                "description": description,
+                "content": {"image/png": {}},
+            },
+            400: {
+                "description": "Invalid input or processing error.",
+            },
+        }
+
 router = APIRouter(prefix="/image", tags=["Image"])
 
-@router.post("/course", description="Extract the course name image of the COE PDF")
+@router.post("/course", description="Extract the course name image of the COE PDF", responses=Responses.png_image_response("A PNG image of the course name section."),)
 async def extract_course_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting course name image from COE PDF")
 
@@ -44,7 +57,7 @@ async def extract_course_image_from_pdf(coe: UploadFile = File(...)):
     # Return the image as a StreamingResponse
     return StreamingResponse(img_byte_arr, media_type="image/png")
 
-@router.post("/acad_year", description="Extract the year level image of the COE PDF")
+@router.post("/acad_year", description="Extract the year level image of the COE PDF", responses=Responses.png_image_response("A PNG image of the academic year section."),)
 async def extract_year_level_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting year level image from COE PDF")
 
@@ -76,7 +89,7 @@ async def extract_year_level_image_from_pdf(coe: UploadFile = File(...)):
     # Return the image as a StreamingResponse
     return StreamingResponse(img_byte_arr, media_type="image/png")
 
-@router.post("/student_name", description="Extract the student name image of the COE PDF")
+@router.post("/student_name", description="Extract the student name image of the COE PDF", responses=Responses.png_image_response("A PNG image of the student name section."))
 async def extract_student_name_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting student name image from COE PDF")
 
@@ -108,7 +121,7 @@ async def extract_student_name_image_from_pdf(coe: UploadFile = File(...)):
     # Return the image as a StreamingResponse
     return StreamingResponse(img_byte_arr, media_type="image/png")
 
-@router.post("/student_no", description="Extract the student number image of the COE PDF")
+@router.post("/student_no", description="Extract the student number image of the COE PDF", responses=Responses.png_image_response("A PNG image of the student number section."))
 async def extract_student_no_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting student number image from COE PDF")
 
@@ -140,7 +153,7 @@ async def extract_student_no_image_from_pdf(coe: UploadFile = File(...)):
     # Return the image as a StreamingResponse
     return StreamingResponse(img_byte_arr, media_type="image/png")
 
-@router.post("/block_no", description="Extract the block number image of the COE PDF")
+@router.post("/block_no", description="Extract the block number image of the COE PDF", responses=Responses.png_image_response("A PNG image of the block number section."))
 async def extract_block_no_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting block number image from COE PDF")
 
@@ -172,7 +185,7 @@ async def extract_block_no_image_from_pdf(coe: UploadFile = File(...)):
     # Return the image as a StreamingResponse
     return StreamingResponse(img_byte_arr, media_type="image/png")
 
-@router.post("/bottom", description="Extract the bottom image of the COE PDF")
+@router.post("/bottom", description="Extract the bottom image of the COE PDF", responses=Responses.png_image_response("A PNG image of the bottom section of the COE PDF."))
 async def extract_bottom_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting bottom image from COE PDF")
 
@@ -214,7 +227,7 @@ async def extract_bottom_image_from_pdf(coe: UploadFile = File(...)):
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
 
-@router.post("/top", description="Extract the top image of the COE PDF")
+@router.post("/top", description="Extract the top image of the COE PDF", responses=Responses.png_image_response("A PNG image of the top section of the COE PDF."))
 async def extract_top_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting top image from COE PDF")
 
