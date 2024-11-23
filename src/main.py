@@ -24,12 +24,12 @@ chaturmeytsocr.add_middleware(
     allow_headers=["*"]
 )
 
-chaturmeytsocr.include_router(img_router)
 chaturmeytsocr.include_router(extract_router)
+chaturmeytsocr.include_router(img_router)
 
-@chaturmeytsocr.get("/")
+@chaturmeytsocr.get("/", tags=["Root"])
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Hello klasmeyts! This is the root of the Chat-Ur-Meyts OCR API."}
 
 if __name__ == "__main__":
     uvicorn.run(chaturmeytsocr, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))

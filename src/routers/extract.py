@@ -48,7 +48,7 @@ class AcadYear(BaseModel):
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-extract_router = APIRouter(prefix="/extract")
+extract_router = APIRouter(prefix="/extract", tags=["Extract"])
 
 @extract_router.post("/all", description="Extract all the information from the COE PDF", response_model=Student)
 async def extract_all_info_from_pdf(coe: UploadFile = File(...)):
