@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import StreamingResponse
+from typing import Optional, List
 import logging
 from pprint import pprint
 from ..COE import COE
@@ -12,7 +13,7 @@ import pytesseract
 class Class(BaseModel):
     class_code: str
     subject_name: str
-    unit_count: str
+    unit_count: Optional[str] = None
     schedule: str
 
 
@@ -23,7 +24,7 @@ class Student(BaseModel):
     block_no: str
     semester: str
     acad_year: str
-    classes: list[Class]
+    classes: List[Class]
 
 class StudentName(BaseModel):
     student_name: str
@@ -89,15 +90,15 @@ async def extract_all_info_from_pdf(coe: UploadFile = File(...)):
     # for each image, extract the text
     student_name = pytesseract.image_to_string(student_name_image).replace("\n", "")
     student_no = pytesseract.image_to_string(student_no_image).replace("\n", "")
-    course_name = pytesseract.image_to_string(course_name_image).replace("\n", "")
-    block_no = pytesseract.image_to_string(block_no_image).replace("\n", "").capitalize()
+    course = pytesseract.image_to_string(course_name_image).replace("\n", "")
+    block_no = pytesseract.image_to_string(block_no_image).replace("\n", "").replace(" ", "").lower().capitalize()
     semester = pytesseract.image_to_string(semester_image).replace("\n", "")
     acad_year = pytesseract.image_to_string(acad_year_image).replace("\n", "")
 
     # print the extracted text
     print(f"Student Name: {student_name}")
     print(f"Student No: {student_no}")
-    print(f"Course Name: {course_name}")
+    print(f"Course Name: {course}")
     print(f"Block No: {block_no}")
     print(f"Semester: {semester}")
     print(f"Academic Year: {acad_year}")
@@ -116,8 +117,8 @@ async def extract_all_info_from_pdf(coe: UploadFile = File(...)):
         try:
             int(class_code)
         except ValueError:
-            # this is not a class code, so we skip this class from being
-            continue
+            # this is not a class code, so we skip the rest of the class
+            break
 
         class_subject_name = pytesseract.image_to_string(class_["subject_name"]).replace("\n", "")
         class_unit_count = pytesseract.image_to_string(class_["unit_count"]).replace("\n", "")
@@ -136,7 +137,15 @@ async def extract_all_info_from_pdf(coe: UploadFile = File(...)):
         print(f"Unit Count: {class_unit_count}")
         print(f"Schedule: {class_schedule}")
 
-    return Student(student_name=student_name, student_no=student_no, course_name=course_name, block_no=block_no, semester=semester, acad_year=acad_year, classes=classes)
+    return Student(
+        student_name=student_name, 
+        student_no=student_no, 
+        course=course, 
+        block_no=block_no, 
+        semester=semester, 
+        acad_year=acad_year, 
+        classes=classes
+    )
 
 @extract_router.post("/semester", description="Extract the semester from the COE PDF", response_model=Semester)
 async def extract_semester_from_pdf(coe: UploadFile = File(...)):
