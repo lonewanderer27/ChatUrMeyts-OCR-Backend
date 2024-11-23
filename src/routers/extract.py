@@ -98,7 +98,7 @@ async def extract_all_info_from_pdf(coe_file: UploadFile = File(...)):
             temp_file.write(content)
 
         # Initialize objects
-        coe = COE(temp_file_path, save_path="temp", save_images=False)
+        coe = COE(temp_file_path, save_images=False)
         cleaner = COETextCleaner()
         
         # Load and preprocess the PDF
@@ -164,6 +164,48 @@ async def extract_all_info_from_pdf(coe_file: UploadFile = File(...)):
         except Exception as e:
             logger.warning(f"Failed to remove temporary file: {e}")
 
+@extract_router.post("/classes", description="Extract the classes from the COE PDF", response_model=List[Class])
+async def extract_classes_from_pdf(coe: UploadFile = File(...)):
+    logger.info("Extracting classes image from COE PDF")
+    cleaner = COETextCleaner()
+
+    # Save the uploaded file temporarily
+    temp_file_path = f"temp_classes_image_{coe.filename}"
+    with open(temp_file_path, "wb") as temp_file:
+        temp_file.write(await coe.read())
+
+    try:
+        # init COE object
+        coe = COE(temp_file_path, save_images=False)
+        
+        # load the COE PDF
+        coe.load_file()
+
+        # resize the image
+        coe.resize_image()
+
+        # Extract classes
+        classes_image = coe.extract_classes()
+
+        # Process classes in parallel
+        with ThreadPoolExecutor() as executor:
+            class_futures = list(executor.map(
+                partial(process_class, cleaner=cleaner),
+                classes_image
+            ))
+        
+        # Filter out None values and create final classes list
+        classes = [c for c in class_futures if c is not None]
+
+        return classes
+
+    finally:
+        # Clean up temporary file
+        try:
+            os.remove(temp_file_path)
+        except Exception as e:
+            logger.warning(f"Failed to remove temporary file: {e}")
+
 @extract_router.post("/semester", description="Extract the semester from the COE PDF", response_model=Semester)
 async def extract_semester_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting semester image from COE PDF")
@@ -176,7 +218,7 @@ async def extract_semester_from_pdf(coe: UploadFile = File(...)):
 
     try:
         # init COE object
-        coe = COE(temp_file_path, save_path="temp", save_images=False)
+        coe = COE(temp_file_path, save_images=False)
         
         # load the COE PDF
         coe.load_file()
@@ -209,7 +251,7 @@ async def extract_course_from_pdf(coe: UploadFile = File(...)):
 
     try:
         # init COE object
-        coe = COE(temp_file_path, save_path="temp", save_images=False)
+        coe = COE(temp_file_path, save_images=False)
         
         # load the COE PDF
         coe.load_file()
@@ -242,7 +284,7 @@ async def extract_block_from_pdf(coe: UploadFile = File(...)):
 
     try:
         # init COE object
-        coe = COE(temp_file_path, save_path="temp", save_images=False)
+        coe = COE(temp_file_path, save_images=False)
         
         # load the COE PDF
         coe.load_file()
@@ -275,7 +317,7 @@ async def extract_student_no_from_pdf(coe: UploadFile = File(...)):
 
     try:
         # init COE object
-        coe = COE(temp_file_path, save_path="temp", save_images=False)
+        coe = COE(temp_file_path, save_images=False)
         
         # load the COE PDF
         coe.load_file()
@@ -308,7 +350,7 @@ async def extract_student_name_from_pdf(coe: UploadFile = File(...)):
 
     try:
         # init COE object
-        coe = COE(temp_file_path, save_path="temp", save_images=False)
+        coe = COE(temp_file_path, save_images=False)
         
         # load the COE PDF
         coe.load_file()
@@ -341,7 +383,7 @@ async def extract_acad_year_from_pdf(coe: UploadFile = File(...)):
 
     try:
         # init COE object
-        coe = COE(temp_file_path, save_path="temp", save_images=False)
+        coe = COE(temp_file_path, save_images=False)
         
         # load the COE PDF
         coe.load_file()
