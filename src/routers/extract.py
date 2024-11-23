@@ -7,6 +7,8 @@ from ..COE import COE
 from ..COETextCleaner import COETextCleaner
 from io import BytesIO
 from pydantic import BaseModel
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 import os
 import re
 import pytesseract
@@ -52,93 +54,115 @@ logger = logging.getLogger(__name__)
 
 extract_router = APIRouter(prefix="/extract", tags=["Extract"])
 
+def process_text_extraction(image, cleaner_func):
+    """Helper function to process OCR and cleaning in one step"""
+    text = pytesseract.image_to_string(image)
+    return cleaner_func(text)
+
+def process_class(class_images, cleaner):
+    """Process a single class entry"""
+    class_code = cleaner.clean_class_code(
+        pytesseract.image_to_string(class_images["class_code"])
+    )
+    
+    # Early return if invalid class code
+    try:
+        int(class_code)
+    except ValueError:
+        return None
+
+    return Class(
+        class_code=class_code,
+        subject_name=cleaner.clean_subject_name(
+            pytesseract.image_to_string(class_images["subject_name"])
+        ),
+        unit_count=cleaner.clean_unit_count(
+            pytesseract.image_to_string(class_images["unit_count"])
+        ),
+        schedule=cleaner.clean_schedule(
+            pytesseract.image_to_string(class_images["schedule"])
+        )
+    )
+
 @extract_router.post("/all", description="Extract all the information from the COE PDF", response_model=Student)
-async def extract_all_info_from_pdf(coe: UploadFile = File(...)):
+async def extract_all_info_from_pdf(coe_file: UploadFile = File(...)):
     logger.info("Extracting all information from COE PDF")
 
-    # Save the uploaded file temporarily
-    temp_file_path = f"temp_{coe.filename}"
-    with open(temp_file_path, "wb") as temp_file:
-        temp_file.write(await coe.read())
-
-    # init COE object
-    coe = COE(temp_file_path, save_path="temp", save_images=False)
-    cleaner = COETextCleaner()
-
-    # load the COE PDF
-    coe.load_file()
-
-    # resize the image
-    coe.resize_image()
-
-    # Extract and clean all text
-    student_name = cleaner.clean_student_name(
-        pytesseract.image_to_string(coe.extract_student_name())
-    )
-    student_no = cleaner.clean_student_no(
-        pytesseract.image_to_string(coe.extract_student_no())
-    )
-    course_name = cleaner.clean_course(
-        pytesseract.image_to_string(coe.extract_course())
-    )
-    block_no = cleaner.clean_block_no(
-        pytesseract.image_to_string(coe.extract_block_no())
-    )
-    semester = cleaner.clean_semester(
-        pytesseract.image_to_string(coe.extract_semester())
-    )
-    acad_year = cleaner.clean_acad_year(
-        pytesseract.image_to_string(coe.extract_acad_year())
-    )
-
-    # extract classes
-    classes_image = coe.extract_classes()
-    classes = []
-
-    # for each class, extract and clean the text
-    for class_ in classes_image:
-        class_code = cleaner.clean_class_code(
-            pytesseract.image_to_string(class_["class_code"])
-        )
-
-        # check if class_code can be converted to an integer
-        try:
-            int(class_code)
-        except ValueError:
-            break
-
-        subject_name = cleaner.clean_subject_name(
-            pytesseract.image_to_string(class_["subject_name"])
-        )
-        unit_count = cleaner.clean_unit_count(
-            pytesseract.image_to_string(class_["unit_count"])
-        )
-        schedule = cleaner.clean_schedule(
-            pytesseract.image_to_string(class_["schedule"])
-        )
-
-        classes.append(Class(
-            class_code=class_code,
-            subject_name=subject_name,
-            unit_count=unit_count,
-            schedule=schedule
-        ))
-
-    # Clean up temporary file
+    # Read file content directly into memory
+    content = await coe_file.read()
+    temp_file_path = f"temp_{coe_file.filename}"
+    
     try:
-        os.remove(temp_file_path)
-    except Exception as e:
-        logger.warning(f"Failed to remove temporary file: {e}")
+        # Write content to temporary file
+        with open(temp_file_path, "wb") as temp_file:
+            temp_file.write(content)
 
-    return Student(
-        student_name=student_name,
-        student_no=student_no,
-        course=course_name,
-        block_no=block_no,
-        semester=semester,
-        acad_year=acad_year,
-        classes=classes
-    )
+        # Initialize objects
+        coe = COE(temp_file_path, save_path="temp", save_images=False)
+        cleaner = COETextCleaner()
+        
+        # Load and preprocess the PDF
+        coe.load_file()
+        coe.resize_image()
+
+        # Extract all images at once
+        images = {
+            'student_name': coe.extract_student_name(),
+            'student_no': coe.extract_student_no(),
+            'course': coe.extract_course(),
+            'block_no': coe.extract_block_no(),
+            'semester': coe.extract_semester(),
+            'acad_year': coe.extract_acad_year()
+        }
+
+        # Create mapping of cleaning functions
+        cleaning_functions = {
+            'student_name': cleaner.clean_student_name,
+            'student_no': cleaner.clean_student_no,
+            'course': cleaner.clean_course,
+            'block_no': cleaner.clean_block_no,
+            'semester': cleaner.clean_semester,
+            'acad_year': cleaner.clean_acad_year
+        }
+
+        # Process basic information in parallel
+        with ThreadPoolExecutor() as executor:
+            futures = {
+                key: executor.submit(process_text_extraction, img, cleaning_functions[key])
+                for key, img in images.items()
+            }
+            
+            # Get results
+            results = {key: future.result() for key, future in futures.items()}
+
+        # Process classes in parallel
+        classes_image = coe.extract_classes()
+        with ThreadPoolExecutor() as executor:
+            class_futures = list(executor.map(
+                partial(process_class, cleaner=cleaner),
+                classes_image
+            ))
+        
+        # Filter out None values and create final classes list
+        classes = [c for c in class_futures if c is not None]
+
+        return Student(
+            student_name=results['student_name'],
+            student_no=results['student_no'],
+            course=results['course'],
+            block_no=results['block_no'],
+            semester=results['semester'],
+            acad_year=results['acad_year'],
+            classes=classes
+        )
+
+    finally:
+        # Clean up temporary file
+        try:
+            if os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
+        except Exception as e:
+            logger.warning(f"Failed to remove temporary file: {e}")
 
 @extract_router.post("/semester", description="Extract the semester from the COE PDF", response_model=Semester)
 async def extract_semester_from_pdf(coe: UploadFile = File(...)):
