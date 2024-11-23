@@ -35,7 +35,7 @@ class COE:
         self.top_image_height = 60
         self.semester_x = 300
         self.semester_width = 250
-        self.semester_height = 20
+        self.semester_height = 17
         self.student_name_x = 105
         self.student_name_y = 20
         self.student_name_width = 400
