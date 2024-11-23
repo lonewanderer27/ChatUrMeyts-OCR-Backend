@@ -10,9 +10,137 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/image")
+router = APIRouter(prefix="/image", tags=["Image"])
 
-@router.post("/extract_block_no_image", description="Extract the block number image of the COE PDF")
+@router.post("course", description="Extract the course name image of the COE PDF")
+async def extract_course_image_from_pdf(coe: UploadFile = File(...)):
+    logger.info("Extracting course name image from COE PDF")
+
+    # Save the uploaded file temporarily
+    temp_file_path = f"temp_course_image_{coe.filename}"
+    with open(temp_file_path, "wb") as temp_file:
+        temp_file.write(await coe.read())
+
+    # init COE object
+    coe_instance = COE(temp_file_path, save_path="temp", save_images=False)
+    
+    # load the COE PDF
+    coe_instance.load_file()
+
+    # resize the image
+    coe_instance.resize_image()
+
+    # Extract course name image
+    course_name_image = coe_instance.extract_course()
+
+    # Convert the image to a byte stream
+    img_byte_arr = BytesIO()
+    course_name_image.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+
+    # Optionally, clean up the temporary file
+    os.remove(temp_file_path)
+
+    # Return the image as a StreamingResponse
+    return StreamingResponse(img_byte_arr, media_type="image/png")
+
+@router.post("/acad_year", description="Extract the year level image of the COE PDF")
+async def extract_year_level_image_from_pdf(coe: UploadFile = File(...)):
+    logger.info("Extracting year level image from COE PDF")
+
+    # Save the uploaded file temporarily
+    temp_file_path = f"temp_year_level_image_{coe.filename}"
+    with open(temp_file_path, "wb") as temp_file:
+        temp_file.write(await coe.read())
+
+    # init COE object
+    coe_instance = COE(temp_file_path, save_path="temp", save_images=False)
+    
+    # load the COE PDF
+    coe_instance.load_file()
+
+    # resize the image
+    coe_instance.resize_image()
+
+    # Extract year level image
+    year_level_image = coe_instance.extract_acad_year()
+
+    # Convert the image to a byte stream
+    img_byte_arr = BytesIO()
+    year_level_image.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+
+    # Optionally, clean up the temporary file
+    os.remove(temp_file_path)
+
+    # Return the image as a StreamingResponse
+    return StreamingResponse(img_byte_arr, media_type="image/png")
+
+@router.post("/student_name", description="Extract the student name image of the COE PDF")
+async def extract_student_name_image_from_pdf(coe: UploadFile = File(...)):
+    logger.info("Extracting student name image from COE PDF")
+
+    # Save the uploaded file temporarily
+    temp_file_path = f"temp_student_name_image_{coe.filename}"
+    with open(temp_file_path, "wb") as temp_file:
+        temp_file.write(await coe.read())
+
+    # init COE object
+    coe_instance = COE(temp_file_path, save_path="temp", save_images=False)
+    
+    # load the COE PDF
+    coe_instance.load_file()
+
+    # resize the image
+    coe_instance.resize_image()
+
+    # Extract student name image
+    student_name_image = coe_instance.extract_student_name()
+
+    # Convert the image to a byte stream
+    img_byte_arr = BytesIO()
+    student_name_image.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+
+    # Optionally, clean up the temporary file
+    os.remove(temp_file_path)
+
+    # Return the image as a StreamingResponse
+    return StreamingResponse(img_byte_arr, media_type="image/png")
+
+@router.post("/student_no", description="Extract the student number image of the COE PDF")
+async def extract_student_no_image_from_pdf(coe: UploadFile = File(...)):
+    logger.info("Extracting student number image from COE PDF")
+
+    # Save the uploaded file temporarily
+    temp_file_path = f"temp_student_no_image_{coe.filename}"
+    with open(temp_file_path, "wb") as temp_file:
+        temp_file.write(await coe.read())
+
+    # init COE object
+    coe_instance = COE(temp_file_path, save_path="temp", save_images=False)
+    
+    # load the COE PDF
+    coe_instance.load_file()
+
+    # resize the image
+    coe_instance.resize_image()
+
+    # Extract student number image
+    student_no_image = coe_instance.extract_student_no()
+
+    # Convert the image to a byte stream
+    img_byte_arr = BytesIO()
+    student_no_image.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+
+    # Optionally, clean up the temporary file
+    os.remove(temp_file_path)
+
+    # Return the image as a StreamingResponse
+    return StreamingResponse(img_byte_arr, media_type="image/png")
+
+@router.post("/block_no", description="Extract the block number image of the COE PDF")
 async def extract_block_no_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting block number image from COE PDF")
 
@@ -44,7 +172,7 @@ async def extract_block_no_image_from_pdf(coe: UploadFile = File(...)):
     # Return the image as a StreamingResponse
     return StreamingResponse(img_byte_arr, media_type="image/png")
 
-@router.post("/extract_bottom_image", description="Extract the bottom image of the COE PDF")
+@router.post("/bottom", description="Extract the bottom image of the COE PDF")
 async def extract_bottom_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting bottom image from COE PDF")
 
@@ -76,7 +204,7 @@ async def extract_bottom_image_from_pdf(coe: UploadFile = File(...)):
     # Return the image as a StreamingResponse
     return StreamingResponse(img_byte_arr, media_type="image/png")
 
-@router.post("/extract_top_image", description="Extract the top image of the COE PDF")
+@router.post("/top", description="Extract the top image of the COE PDF")
 async def extract_top_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting top image from COE PDF")
 
