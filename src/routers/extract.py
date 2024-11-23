@@ -19,11 +19,29 @@ class Class(BaseModel):
 class Student(BaseModel):
     student_name: str
     student_no: str
-    course_name: str
+    course: str
     block_no: str
     semester: str
     acad_year: str
     classes: list[Class]
+
+class StudentName(BaseModel):
+    student_name: str
+
+class StudentNo(BaseModel):
+    student_no: str
+
+class Course(BaseModel):
+    course: str
+
+class BlockNo(BaseModel):
+    block_no: str
+
+class Semester(BaseModel):
+    semester: str
+
+class AcadYear(BaseModel):
+    acad_year: str
 
 
 # Configure Logging
@@ -175,7 +193,7 @@ async def extract_course_from_pdf(coe: UploadFile = File(...)):
     course_name = re.search(r"([A-Z.\s]+)", course_name).group(0)
 
     # Image to string
-    return {"course_name": course_name}
+    return Course(course_name=course_name)
 
 @extract_router.post("/block", description="Extract the block number from the COE PDF")
 async def extract_block_from_pdf(coe: UploadFile = File(...)):
@@ -205,7 +223,7 @@ async def extract_block_from_pdf(coe: UploadFile = File(...)):
     block_no = block_no.replace("\n", "")
 
     # Image to string
-    return {"block_no": block_no}
+    return BlockNo(block_no=block_no)
 
 @extract_router.post("/student_no", description="Extract the student number from the COE PDF")
 async def extract_student_no_from_pdf(coe: UploadFile = File(...)):
@@ -232,4 +250,58 @@ async def extract_student_no_from_pdf(coe: UploadFile = File(...)):
     student_no = pytesseract.image_to_string(student_no_image)
 
     # Image to string
-    return {"student_no": student_no}
+    return StudentNo(student_no=student_no)
+
+@extract_router.post("/student_name", description="Extract the student name from the COE PDF")
+async def extract_student_name_from_pdf(coe: UploadFile = File(...)):
+    logger.info("Extracting student name image from COE PDF")
+
+    # Save the uploaded file temporarily
+    temp_file_path = f"temp_student_name_image_{coe.filename}"
+    with open(temp_file_path, "wb") as temp_file:
+        temp_file.write(await coe.read())
+
+    # init COE object
+    coe = COE(temp_file_path, save_path="temp", save_images=False)
+    
+    # load the COE PDF
+    coe.load_file()
+
+    # resize the image
+    coe.resize_image()
+
+    # Extract student name image
+    student_name_image = coe.extract_student_name()
+
+    # Image to string
+    student_name = pytesseract.image_to_string(student_name_image)
+
+    # Image to string
+    return StudentName(student_name=student_name)
+
+@extract_router.post("/acad_year", description="Extract the academic year from the COE PDF")
+async def extract_acad_year_from_pdf(coe: UploadFile = File(...)):
+    logger.info("Extracting academic year image from COE PDF")
+
+    # Save the uploaded file temporarily
+    temp_file_path = f"temp_acad_year_image_{coe.filename}"
+    with open(temp_file_path, "wb") as temp_file:
+        temp_file.write(await coe.read())
+
+    # init COE object
+    coe = COE(temp_file_path, save_path="temp", save_images=False)
+    
+    # load the COE PDF
+    coe.load_file()
+
+    # resize the image
+    coe.resize_image()
+
+    # Extract academic year image
+    acad_year_image = coe.extract_acad_year()
+
+    # Image to string
+    acad_year = pytesseract.image_to_string(acad_year_image)
+
+    # Image to string
+    return AcadYear(acad_year=acad_year)
