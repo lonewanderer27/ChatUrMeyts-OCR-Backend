@@ -91,7 +91,12 @@ async def extract_all_info_from_pdf(coe: UploadFile = File(...)):
     student_name = pytesseract.image_to_string(student_name_image).replace("\n", "")
     student_no = pytesseract.image_to_string(student_no_image).replace("\n", "")
     course = pytesseract.image_to_string(course_name_image).replace("\n", "")
-    block_no = pytesseract.image_to_string(block_no_image).replace("\n", "").replace(" ", "").lower().capitalize()
+    block_no = pytesseract.image_to_string(block_no_image)
+    # Clean up the block number:
+    # 1. Remove newlines
+    # 2. Remove all spaces
+    # 3. Convert to uppercase
+    block_no = block_no.replace("\n", "").replace(" ", "").upper()
     semester = pytesseract.image_to_string(semester_image).replace("\n", "")
     acad_year = pytesseract.image_to_string(acad_year_image).replace("\n", "")
 
