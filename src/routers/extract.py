@@ -29,6 +29,14 @@ class Student(BaseModel):
     acad_year: str
     classes: List[Class]
 
+class AcademicInfo(BaseModel):
+    student_name: str
+    student_no: str
+    course: str
+    block_no: str
+    semester: str
+    acad_year: str
+
 class StudentName(BaseModel):
     student_name: str
 
@@ -104,7 +112,7 @@ async def extract_all_info_from_pdf(coe_file: UploadFile = File(...)):
 
         # Initialize objects
         coe = COE(temp_file_path, save_images=False)
-        cleaner = COECOETextCleaner()
+        cleaner = COETextCleaner()
         
         # Load and preprocess the PDF
         coe.load_file()
@@ -172,10 +180,79 @@ async def extract_all_info_from_pdf(coe_file: UploadFile = File(...)):
         except Exception as e:
             logger.warning(f"Failed to remove temporary file: {e}")
 
+@extract_router.post("/academic_info", description="Extract the academic information from the COE PDF", response_model=AcademicInfo)
+async def extract_all_info_from_pdf(coe_file: UploadFile = File(...)):
+    logger.info("Extracting all information from COE PDF")
+
+    # Read file content directly into memory
+    content = await coe_file.read()
+    temp_file_path = f"temp_{coe_file.filename}"
+    
+    try:
+        # Write content to temporary file
+        with open(temp_file_path, "wb") as temp_file:
+            temp_file.write(content)
+
+        # Initialize objects
+        coe = COE(temp_file_path, save_images=False)
+        cleaner = COETextCleaner()
+        
+        # Load and preprocess the PDF
+        coe.load_file()
+        coe.resize_image()
+
+        # Extract all images at once
+        images = {
+            'student_name': coe.extract_student_name(),
+            'student_no': coe.extract_student_no(),
+            'course': coe.extract_course(),
+            'block_no': coe.extract_block_no(),
+            'semester': coe.extract_semester(),
+            'acad_year': coe.extract_acad_year()
+        }
+
+        # Create mapping of cleaning functions
+        cleaning_functions = {
+            'student_name': cleaner.clean_student_name,
+            'student_no': cleaner.clean_student_no,
+            'course': cleaner.clean_course,
+            'block_no': cleaner.clean_block_no,
+            'semester': cleaner.clean_semester,
+            'acad_year': cleaner.clean_acad_year
+        }
+
+        # Process basic information in parallel
+        with ThreadPoolExecutor() as executor:
+            futures = {
+                key: executor.submit(process_text_extraction, img, cleaning_functions[key])
+                for key, img in images.items()
+            }
+            
+            # Get results
+            results = {key: future.result() for key, future in futures.items()}
+
+        # Build the Student object with the processed classes
+        return AcademicInfo(
+            student_name=results['student_name'],
+            student_no=results['student_no'],
+            course=results['course'],
+            block_no=results['block_no'],
+            semester=results['semester'],
+            acad_year=results['acad_year'],
+        )
+
+    finally:
+        # Clean up temporary file
+        try:
+            if os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
+        except Exception as e:
+            logger.warning(f"Failed to remove temporary file: {e}")
+
 @extract_router.post("/classes", description="Extract the classes from the COE PDF", response_model=List[Class])
 async def extract_classes_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting classes image from COE PDF")
-    cleaner = COECOETextCleaner()
+    cleaner = COETextCleaner()
 
     # Save the uploaded file temporarily
     temp_file_path = f"temp_classes_image_{coe.filename}"
