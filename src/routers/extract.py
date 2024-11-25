@@ -97,7 +97,7 @@ def chunks(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
-@extract_router.post("/all", description="Extract all the information from the COE PDF", response_model=Student)
+@extract_router.post("", description="Extract all the information from the COE PDF", response_model=Student)
 async def extract_all_info_from_pdf(coe_file: UploadFile = File(...)):
     logger.info("Extracting all information from COE PDF")
 

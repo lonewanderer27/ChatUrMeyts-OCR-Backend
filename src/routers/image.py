@@ -25,7 +25,7 @@ class Responses:
 
 router = APIRouter(prefix="/image", tags=["Image"])
 
-@router.post("/", description="Extract the image of the COE PDF", responses=Responses.png_image_response("A PNG image of the COE PDF."))
+@router.post("", description="Extract the image of the COE PDF", responses=Responses.png_image_response("A PNG image of the COE PDF."))
 async def extract_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting image from COE PDF")
 
