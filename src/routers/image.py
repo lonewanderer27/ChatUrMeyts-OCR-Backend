@@ -25,6 +25,48 @@ class Responses:
 
 router = APIRouter(prefix="/image", tags=["Image"])
 
+@router.post("/", description="Extract the image of the COE PDF", responses=Responses.png_image_response("A PNG image of the COE PDF."))
+async def extract_image_from_pdf(coe: UploadFile = File(...)):
+    logger.info("Extracting image from COE PDF")
+
+    try:
+        # Save the uploaded file temporarily
+        temp_file_path = f"temp_coe_image_{coe.filename}"
+        with open(temp_file_path, "wb") as temp_file:
+            temp_file.write(await coe.read())
+
+        # init COE object
+        coe_instance = COE(temp_file_path, save_path="temp", save_images=False)
+        
+        # load the COE PDF
+        coe_instance.load_file()
+
+        # resize the image
+        coe_instance.resize_image()
+
+        # Extract top image
+        top_image = coe_instance.get_coe_image()
+
+        # Convert the image to a byte stream
+        img_byte_arr = BytesIO()
+        top_image.save(img_byte_arr, format='PNG')
+        img_byte_arr.seek(0)
+
+        # Optionally, clean up the temporary file
+        os.remove(temp_file_path)
+
+        # Return the image as a StreamingResponse
+        return StreamingResponse(img_byte_arr, media_type="image/png")
+
+    except Exception as e:
+        logger.error(f"Failed to process file {coe.filename}: {str(e)}")
+        return {"error": "Failed to process the file. Please check the file format and try again."}
+
+    finally:
+        # Ensure temporary files are deleted
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+
 @router.post("/course", description="Extract the course name image of the COE PDF", responses=Responses.png_image_response("A PNG image of the course name section."),)
 async def extract_course_image_from_pdf(coe: UploadFile = File(...)):
     logger.info("Extracting course name image from COE PDF")

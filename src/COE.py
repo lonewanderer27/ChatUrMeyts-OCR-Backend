@@ -114,6 +114,25 @@ class COE:
         self.image = self.image.resize((self.target_width, self.target_height))
         logger.info(f"Image resized to {self.target_width}x{self.target_height}.")
 
+    def get_coe_image(self, save_image=None):
+        """
+        Extract and return the COE image.
+
+        Parameters:
+            save_image (bool): Boolean to override the class-level save configuration.
+        """
+        if not self.image:
+            raise ValueError("No image loaded. Please load a file first.")
+
+        coe_image = self.image
+        logger.info("COE image extracted successfully.")
+        if save_image if save_image is not None else self.save_images:
+            top_image_path = os.path.join(self.save_path, "coe_image.png")
+            top_image.save(top_image_path)
+            logger.info(f"COE image saved as {top_image_path}.")
+        
+        return coe_image
+
     def get_top_image(self, save_image=None):
         """
         Extract and return the top image region based on pre-defined coordinates.
